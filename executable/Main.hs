@@ -55,17 +55,34 @@ indexDoc timestamp cost = do
 home :: H.Html
 home = H.docTypeHtml $ do
   H.head $ do
+    H.meta ! charset "utf-8"
+    H.meta ! name "viewport" ! content "width=device-width, initial-scale=1"
     H.title application
     H.link ! rel "stylesheet" ! type_ "text/css" ! href "/style.css"
+    H.link ! rel "stylesheet" ! type_ "text/css" ! href "/bulma.min.css"
   H.body $ do
-    H.h1 application
-    H.form ! action "/" ! method "POST" $ do
-      H.label "Purchase Date" ! for "date"
-      H.input ! type_ "date" ! name "date" ! Text.Blaze.Html5.Attributes.id "date"
+    H.section ! class_ "section" $ do
+      H.div ! class_ "container" $ do
+        H.h1 ! class_ "title" $ application
+        H.form ! action "/" ! method "POST" $ do
+          H.div ! class_ "field" $ do
+            H.label "Purchase Date" ! class_ "label" ! for "date"
+            H.div ! class_ "control" $ do
+              H.input ! class_ "input" ! type_ "date" ! name "date" ! Text.Blaze.Html5.Attributes.id "date"
 
-      H.label "Cost" ! for "cost"
-      H.input ! type_ "number" ! name "cost"
-        ! Text.Blaze.Html5.Attributes.id "cost"
-        ! step "0.01"
+          H.div ! class_ "field" $ do
+            H.label "Cost" ! class_ "label" ! for "cost"
+            H.div ! class_ "control" $ do
+              H.input ! type_ "number" ! class_ "input" ! name "cost"
+                ! Text.Blaze.Html5.Attributes.id "cost"
+                ! step "0.01"
 
-      H.input ! type_ "submit" ! value "Save"
+          H.div ! class_ "field" $ do
+            H.label "Odometer" ! class_ "label" ! for "miles"
+            H.div ! class_ "control" $ do
+              H.input ! type_ "number" ! class_ "input" ! name "miles"
+                ! Text.Blaze.Html5.Attributes.id "miles"
+
+          H.div ! class_ "field" $ do
+            H.div ! class_ "control" $ do
+              H.button ! class_ "button is-link" $ "Save"
