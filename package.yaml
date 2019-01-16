@@ -19,9 +19,18 @@ executables:
     source-dirs: executable
     main: Main.hs
     dependencies:
+    - aeson
     - base
+    - blaze-html
+    - bloodhound
+    - classy-prelude
+    - http-client
+    - mtl
     - Spock
+    - vector
+    - wai-middleware-static
     default-extensions:
+    - NoImplicitPrelude
     - OverloadedStrings
     ghc-options:
     - -rtsopts
