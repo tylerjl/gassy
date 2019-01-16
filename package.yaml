@@ -1,0 +1,29 @@
+name: gassy
+version: '0.0.0'
+github: "tylerjl/gassy"
+license: MIT
+author: "Tyler Langlois"
+maintainer: "Tyler Langlois"
+
+extra-source-files:
+- CHANGELOG.md
+- LICENSE.md
+- package.yaml
+- README.md
+- stack.yaml
+
+ghc-options: -Wall
+
+executables:
+  gassy:
+    source-dirs: executable
+    main: Main.hs
+    dependencies:
+    - base
+    - Spock
+    default-extensions:
+    - OverloadedStrings
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
