@@ -1,11 +1,12 @@
 module Main where
 
-import ClassyPrelude hiding (for)
+import ClassyPrelude hiding (for, min)
 
 import Control.Lens hiding ((.=))
 import Control.Logger.Simple
 import Data.Aeson
 import Data.Aeson.Lens
+import Data.Time
 import qualified Data.Vector as V
 import Database.V5.Bloodhound hiding (key, name)
 import Network.HTTP.Client (defaultManagerSettings)
@@ -34,7 +35,8 @@ main = do
 app :: SpockM () () () ()
 app = do
   middleware (staticPolicy (addBase "static"))
-  get root $ homePage Nothing
+  get root $
+    liftIO today >>= homePage Nothing
   post root $ do
     date' <- param "date"
     cost' <- param "cost"
@@ -44,8 +46,11 @@ app = do
         resp <- liftIO (parseEsResponse reply)
         return $ Just resp
       _ -> return Nothing
-    homePage esResponse
-  where homePage r = html . toStrict $ R.renderHtml $ home r
+    liftIO today >>= homePage esResponse
+  where homePage r t = html . toStrict $ R.renderHtml $ home r t
+        today = do
+          t <- getZonedTime
+          return $ formatTime defaultTimeLocale "%Y-%m-%d" t
 
 indexDoc :: Text -> Text -> IO Reply
 indexDoc timestamp cost = do
@@ -57,52 +62,68 @@ indexDoc timestamp cost = do
                ]
       ]
 
-home :: Maybe (Either EsError Value) -> H.Html
-home flash = H.docTypeHtml $ do
+home :: Maybe (Either EsError Value) -> String -> H.Html
+home flash timestamp = H.docTypeHtml $ do
   H.head $ do
     H.meta ! charset "utf-8"
     H.meta ! name "viewport" ! content "width=device-width, initial-scale=1"
     H.title application
     H.link ! rel "stylesheet" ! type_ "text/css" ! href "/style.css"
     H.link ! rel "stylesheet" ! type_ "text/css" ! href "/bulma.min.css"
+    H.link ! rel "stylesheet" ! type_ "text/css" ! href "/animate.min.css"
   H.body $ do
     H.section ! class_ "section" $ do
       H.div ! class_ "container" $ do
-        notification
+        notification flash
         H.h1 ! class_ "title" $ application
         H.form ! action "/" ! method "POST" $ do
+
           H.div ! class_ "field" $ do
             H.label "Purchase Date" ! class_ "label" ! for "date"
             H.div ! class_ "control" $ do
-              H.input ! class_ "input" ! type_ "date" ! name "date" ! Text.Blaze.Html5.Attributes.id "date"
+              H.input ! class_ "input" ! type_ "date" ! name "date"
+                ! Text.Blaze.Html5.Attributes.id "date"
+                ! value (H.stringValue timestamp)
 
           H.div ! class_ "field" $ do
             H.label "Cost" ! class_ "label" ! for "cost"
             H.div ! class_ "control" $ do
-              H.input ! type_ "number" ! class_ "input" ! name "cost"
+              H.input ! type_ "number" ! min "0" ! class_ "input" ! name "cost"
                 ! Text.Blaze.Html5.Attributes.id "cost"
                 ! step "0.01"
 
           H.div ! class_ "field" $ do
+            H.label "Gallons" ! class_ "label" ! for "gallons"
+            H.div ! class_ "control has-icon-left" $ do
+              H.input ! type_ "number" ! min "0" ! class_ "input" ! name "gallons"
+                ! Text.Blaze.Html5.Attributes.id "gallons"
+                ! step "0.001"
+
+          H.div ! class_ "field" $ do
             H.label "Odometer" ! class_ "label" ! for "miles"
             H.div ! class_ "control" $ do
-              H.input ! type_ "number" ! class_ "input" ! name "miles"
+              H.input ! type_ "number" ! min "0" ! class_ "input" ! name "miles"
                 ! Text.Blaze.Html5.Attributes.id "miles"
 
           H.div ! class_ "field" $ do
             H.div ! class_ "control" $ do
               H.button ! class_ "button is-link" $ "Save"
-  where notification = case errs of
-                         Just b -> do
-                           H.div ! class_ ("notification is-" <> sev) $ H.toHtml msg
-                           where (sev, msg :: Text) =
-                                   if b then
-                                     ("warning", "Problem storing data.")
-                                   else
-                                     ("primary", "Logged mileage successfully.")
-                         _ -> mempty
-        errs = case flash of
-                 (Just reply) -> case reply of
-                   Right val -> val ^? key "errors" . _Bool
-                   _ -> Nothing
-                 _ -> Nothing
+
+  where notification (Just (Right val)) =
+          let
+            (sev, msg :: Text) =
+              if val ^? key "errors" . _Bool == Just True then
+                ( "warning"
+                , "Problem storing data: "
+                  <> intercalate ", " (val ^.. deep (key "reason" . _String))
+                  <> "."
+                )
+              else
+                ( "primary"
+                , "Logged mileage successfully ("
+                  <> intercalate ", " (val ^.. deep (key "_id" . _String))
+                  <> ")."
+                )
+          in
+            H.div ! class_ ("notification animated flipOutX delay-2s is-" <> sev) $ H.toHtml msg
+        notification _ = mempty

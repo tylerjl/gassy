@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-12.26
+resolver: lts-13.3
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,7 +39,15 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - bloodhound-0.16.0.0
+- containers-0.5.11.0
+- focus-0.1.5.2
+- primitive-extras-0.7.1
+- reroute-0.5.0.0
+- Spock-0.13.0.0
+- Spock-core-0.13.0.0
 - simple-logger-0.0.4
+- stm-containers-0.2.16
+- stm-hamt-1.2.0.2
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

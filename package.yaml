@@ -30,6 +30,7 @@ executables:
     - mtl
     - simple-logger
     - Spock
+    - time
     - vector
     - wai-middleware-static
     default-extensions:
