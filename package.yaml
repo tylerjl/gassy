@@ -25,13 +25,17 @@ executables:
     - bloodhound
     - classy-prelude
     - http-client
+    - lens
+    - lens-aeson
     - mtl
+    - simple-logger
     - Spock
     - vector
     - wai-middleware-static
     default-extensions:
     - NoImplicitPrelude
     - OverloadedStrings
+    - ScopedTypeVariables
     ghc-options:
     - -rtsopts
     - -threaded

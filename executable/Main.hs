@@ -2,9 +2,12 @@ module Main where
 
 import ClassyPrelude hiding (for)
 
+import Control.Lens hiding ((.=))
+import Control.Logger.Simple
 import Data.Aeson
+import Data.Aeson.Lens
 import qualified Data.Vector as V
-import Database.V5.Bloodhound hiding (name)
+import Database.V5.Bloodhound hiding (key, name)
 import Network.HTTP.Client (defaultManagerSettings)
 import Network.Wai.Middleware.Static
 import Web.Spock
@@ -24,23 +27,25 @@ es = Server "http://elasticsearch.service.consul:9200"
 
 main :: IO ()
 main = do
-  spockCfg <- defaultSpockCfg () PCNoDatabase ()
-  runSpock 8090 (spock spockCfg app)
+  withGlobalLogging (LogConfig Nothing True) $ do
+    spockCfg <- defaultSpockCfg () PCNoDatabase ()
+    runSpock 8090 (spock spockCfg app)
 
 app :: SpockM () () () ()
 app = do
   middleware (staticPolicy (addBase "static"))
-  get root homePage
+  get root $ homePage Nothing
   post root $ do
     date' <- param "date"
     cost' <- param "cost"
-    case (date', cost') of
+    esResponse <- case (date', cost') of
       (Just date, Just cost) -> do
-        _ <- liftIO $ indexDoc date cost
-        pure ()
-      _ -> pure ()
-    homePage
-  where homePage = html . toStrict $ R.renderHtml home
+        reply <- liftIO $ indexDoc date cost
+        resp <- liftIO (parseEsResponse reply)
+        return $ Just resp
+      _ -> return Nothing
+    homePage esResponse
+  where homePage r = html . toStrict $ R.renderHtml $ home r
 
 indexDoc :: Text -> Text -> IO Reply
 indexDoc timestamp cost = do
@@ -52,8 +57,8 @@ indexDoc timestamp cost = do
                ]
       ]
 
-home :: H.Html
-home = H.docTypeHtml $ do
+home :: Maybe (Either EsError Value) -> H.Html
+home flash = H.docTypeHtml $ do
   H.head $ do
     H.meta ! charset "utf-8"
     H.meta ! name "viewport" ! content "width=device-width, initial-scale=1"
@@ -63,6 +68,7 @@ home = H.docTypeHtml $ do
   H.body $ do
     H.section ! class_ "section" $ do
       H.div ! class_ "container" $ do
+        notification
         H.h1 ! class_ "title" $ application
         H.form ! action "/" ! method "POST" $ do
           H.div ! class_ "field" $ do
@@ -86,3 +92,17 @@ home = H.docTypeHtml $ do
           H.div ! class_ "field" $ do
             H.div ! class_ "control" $ do
               H.button ! class_ "button is-link" $ "Save"
+  where notification = case errs of
+                         Just b -> do
+                           H.div ! class_ ("notification is-" <> sev) $ H.toHtml msg
+                           where (sev, msg :: Text) =
+                                   if b then
+                                     ("warning", "Problem storing data.")
+                                   else
+                                     ("primary", "Logged mileage successfully.")
+                         _ -> mempty
+        errs = case flash of
+                 (Just reply) -> case reply of
+                   Right val -> val ^? key "errors" . _Bool
+                   _ -> Nothing
+                 _ -> Nothing
