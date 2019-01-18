@@ -1,3 +1,4 @@
+---
 name: gassy
 version: '0.0.0'
 github: "tylerjl/gassy"
@@ -23,20 +24,27 @@ executables:
     - base
     - blaze-html
     - bloodhound
-    - classy-prelude
+    - http-api-data
     - http-client
     - lens
     - lens-aeson
-    - mtl
-    - simple-logger
-    - Spock
+    - magicbane
+    - rio
+    - scientific
+    - servant-blaze
     - time
     - vector
+    - wai-extra
     - wai-middleware-static
     default-extensions:
+    - DataKinds
+    - DeriveAnyClass
+    - DeriveGeneric
     - NoImplicitPrelude
     - OverloadedStrings
     - ScopedTypeVariables
+    - TypeOperators
+    - UnicodeSyntax
     ghc-options:
     - -rtsopts
     - -threaded
