@@ -130,18 +130,12 @@ homePage flash = do
 notification :: Either a Value -> H.Html
 notification (Right val) =
   let
-    details key' = map show $ val ^.. deep (key key' . _String)
+    details key' = intercalate ", " $ map show $ val ^.. deep (key key' . _String)
     (sev, msg) =
       if val ^? key "errors" . _Bool == Just True then
-        ( "warning"
-        , "Problem storing data: "
-          <> (intercalate ", " $ details "reason") <> "."
-        )
+        ( "warning" , "Problem storing data: " <> details "reason" <> "." )
       else
-        ( "primary"
-        , "Logged mileage successfully ("
-          <> (intercalate ", " $ details "_id") <> ")."
-        )
+        ( "primary" , "Logged mileage successfully (" <> details "_id" <> ")." )
   in
     H.div ! class_ ("notification animated slideOutUp delay-2s is-" <> sev) $ H.toHtml msg
 notification _ = mempty
