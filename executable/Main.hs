@@ -15,8 +15,8 @@ import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5.Attributes hiding (title)
 import Web.FormUrlEncoded (FromForm)
 
-import qualified Text.Blaze.Html5 as H
 import qualified Data.Vector as V
+import qualified Text.Blaze.Html5 as H
 
 data FillUp = FillUp
   { date     :: Day
@@ -32,44 +32,53 @@ instance ToJSON FillUp
 type API = Get '[HTML] H.Html
       :<|> ReqBody '[FormUrlEncoded] FillUp :> Post '[HTML] H.Html
 
+routes :: ServerT API App
+routes = homePage mempty
+    :<|> addFillUp
+
 api :: Proxy API
-api = Proxy :: Proxy API
+api = Proxy
+
+data AppConf = AppConf { elasticsearchHost :: Text } deriving (Generic, Show)
+
+instance DefConfig AppConf where
+  defConfig = AppConf { elasticsearchHost = "http://localhost:9200" }
+
+instance FromEnv AppConf
+
+type AppContext = (AppConf)
+type App = RIO AppContext
 
 main :: IO ()
-main = do
-  ctx <- newBasicContext
+main = withEnvConfig $ \conf -> do
   defWaiMain $
     logStdout $
     staticPolicy (addBase "static") $
-    magicbaneApp api EmptyContext ctx $
-      root :<|> addFillUp
+    magicbaneApp api EmptyContext (conf) routes
 
 application :: H.Html
 application = "Gassy"
 
-es :: Server
-es = Server "http://elasticsearch.service.consul:9200"
-
-indexDoc :: Value -> IO Reply
+indexDoc :: (MonadIO m, Has AppConf α, MonadReader α m)
+         => Value -> m Reply
 indexDoc doc = do
-  withBH defaultManagerSettings es $ bulk $ V.fromList $
+  manager <- liftIO $ newManager defaultManagerSettings
+  esHost <- askOpt elasticsearchHost
+  runBH (es esHost manager) $ bulk $ V.fromList $
     [ BulkIndexAuto (IndexName "gas") (MappingName "_doc") doc ]
+  where es h m = mkBHEnv (Server h) m
 
 today :: IO String
 today = do
   getZonedTime >>= return . formatTime defaultTimeLocale "%Y-%m-%d"
 
-addFillUp :: FillUp -> BasicApp H.Html
+addFillUp :: FillUp -> App H.Html
 addFillUp fillUp = do
-  r' <- liftIO $ indexDoc $ toJSON fillUp
+  r' <- indexDoc $ toJSON fillUp
   resp <- liftIO $ (parseEsResponse r' :: IO (Either EsError Value))
   homePage $ notification resp
 
-root :: BasicApp H.Html
-root = do
-  homePage mempty
-
-homePage :: H.Html -> BasicApp H.Html
+homePage :: H.Html -> App H.Html
 homePage flash = do
   timestamp <- liftIO $ today
   return $ H.docTypeHtml $ do
