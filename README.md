@@ -1,48 +1,28 @@
 # [gassy][]
 
-Thanks for starting a project with Haskeleton! If you haven't heard of it
-before, I suggest reading the introductory blog post. You can find it here:
-<http://taylor.fausak.me/2014/03/04/haskeleton-a-haskell-project-skeleton/>.
+Gassy is a simple way to log gas receipts for later analysis in Elasticsearch.
+It runs on [magicbane][], which is a Haskell framework akin to sinatra or flask.
 
-Before you get started, there are a few things that this template couldn't
-provide for you. You should:
+Sorry about the name.
 
--   Add a synopsis to `package.yaml`. It should be a short (one sentence)
-    explanation of your project.
+## Quickstart
 
--   Add a description to `package.yaml`. This can be whatever you want it to
-    be.
+You need to have [stack][] installed.
 
--   Add a category to `package.yaml`. A list of categories is available on
-    Hackage at <http://hackage.haskell.org/packages>.
-
--   Rename `library/Example.hs` to whatever you want your top-level module to
-    be called. Typically this is the same as your package name but in
-    `CamelCase` instead of `kebab-case`.
-
-    -   Don't forget to rename the reference to it in
-        `executable/Main.hs`!
-
--   If you are on an older version of Stack (<1.0.4), delete `package.yaml` and
-    remove `/*.cabal` from your `.gitignore`.
-
-Once you've done that, start working on your project with the Stack commands
-you know and love.
-
-``` sh
-# Build the project.
-stack build
-
-# Run the test suite.
-stack test
-
-# Run the benchmarks.
-stack bench
-
-# Generate documentation.
-stack haddock
+```sh
+$ stack build --exec gassy
 ```
 
-Thanks again, and happy hacking!
+Gassy will talk to `https://localhost:9200` for Elasticsearch.
+Set `ELASTICSEARCH_HOST` to use a different Elasticsearch endpoint.
+
+## Development
+
+I haven't written tests or benchmarks because the compiler has been good enough so far.
+
+To see an example of what this looks like with Spock, see commit 43ce96d6dd37052fd85012923a161a869ac0a564.
+I switched to magicbane as an experiment, and Servant has felt a little better.
 
 [gassy]: https://github.com/tylerjl/gassy
+[magicbane]: http://hackage.haskell.org/package/magicbane
+[stack]: https://docs.haskellstack.org/en/stable/README/

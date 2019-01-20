@@ -18,6 +18,7 @@ import Web.FormUrlEncoded (FromForm)
 import qualified Data.Vector as V
 import qualified Text.Blaze.Html5 as H
 
+-- |Represents visiting the gas pump.
 data FillUp = FillUp
   { date     :: Day
   , gallons  :: Float
@@ -52,13 +53,17 @@ type App = RIO AppContext
 main :: IO ()
 main = withEnvConfig $ \conf -> do
   defWaiMain $
+    -- Middleware for access logs. Easy!
     logStdout $
+    -- Middleware to serve our static assets. Easy!
     staticPolicy (addBase "static") $
+    -- Magicbane wraps up our Servant `App` neatly.
     magicbaneApp api EmptyContext (conf) routes
 
 application :: H.Html
 application = "Gassy"
 
+-- |Index an Aeson `Value` into Elasticsearch.
 indexDoc :: (MonadIO m, Has AppConf α, MonadReader α m)
          => Value -> m Reply
 indexDoc doc = do
@@ -68,6 +73,7 @@ indexDoc doc = do
     [ BulkIndexAuto (IndexName "gas") (MappingName "_doc") doc ]
   where es h m = mkBHEnv (Server h) m
 
+-- |Get a simple timestamp string.
 today :: IO String
 today = do
   getZonedTime >>= return . formatTime defaultTimeLocale "%Y-%m-%d"
@@ -127,6 +133,8 @@ homePage flash = do
               H.div ! class_ "control" $ do
                 H.button ! class_ "button is-link" $ "Save"
 
+-- |Pass in a parsed Blodhound response and get back a notification to display
+-- to the user.
 notification :: Either a Value -> H.Html
 notification (Right val) =
   let
@@ -138,9 +146,10 @@ notification (Right val) =
         ( "primary" , "Logged mileage successfully (" <> details "_id" <> ")." )
   in
     H.div ! class_ ("notification animated slideOutUp delay-2s is-" <> sev) $ H.toHtml msg
+-- If it isn't parse-able, just ignore it (TODO: don't ignore it)
 notification _ = mempty
 
--- Utils
+-- Utils. To avoid some namespace collisions.
 
 href_ :: H.AttributeValue -> H.Attribute
 href_ = Text.Blaze.Html5.Attributes.href
