@@ -40,10 +40,18 @@ routes = homePage mempty
 api :: Proxy API
 api = Proxy
 
-data AppConf = AppConf { elasticsearchHost :: Text } deriving (Generic, Show)
+data AppConf =
+  AppConf
+  { elasticsearchHost :: Text
+  , staticPath        :: String
+  } deriving (Generic, Show)
 
 instance DefConfig AppConf where
-  defConfig = AppConf { elasticsearchHost = "http://localhost:9200" }
+  defConfig =
+    AppConf
+    { elasticsearchHost = "http://localhost:9200"
+    , staticPath = "static"
+    }
 
 instance FromEnv AppConf
 
@@ -56,7 +64,7 @@ main = withEnvConfig $ \conf -> do
     -- Middleware for access logs. Easy!
     logStdout $
     -- Middleware to serve our static assets. Easy!
-    staticPolicy (addBase "static") $
+    staticPolicy (addBase $ staticPath conf) $
     -- Magicbane wraps up our Servant `App` neatly.
     magicbaneApp api EmptyContext (conf) routes
 
