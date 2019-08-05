@@ -1,12 +1,12 @@
 ---
-resolver: lts-13.3
+resolver: lts-13.29
 packages:
 - .
 extra-deps:
-- bloodhound-0.16.0.0
-- containers-0.5.11.0
-- ekg-json-0.1.0.6
-- ekg-wai-0.1.0.3
-- magicbane-0.4.0
-- monad-metrics-0.2.1.2
-- wai-middleware-metrics-0.2.4
+- bloodhound-0.16.0.0@sha256:b7be3a83e7b914fbe80a9b9de29009ad60cff072f5f8d4af4ee64de8e6406d32
+- containers-0.5.11.0@sha256:28ad7337057442f75bc689315ab4ec7bdf5e6b2c39668f306672cecd82c02798
+- ekg-wai-0.1.0.3@sha256:d6b62107589f7ddd30b6c56dbb22f9904e274fd9ce24807db76833fab9506c9e
+- magicbane-0.4.0@sha256:d47fc4467985283aa20dc538e14e05cccb06fa048c92f42afa391cfa19beee8b
+- monad-metrics-0.2.1.4@sha256:ec7be46f0693b1acb0d7cad114b33f418eb82447f3a6bc90b19f695ff3a6d718
+- refined-0.4.2.2@sha256:52adff15a70ed485a126b6fcf0e23a0f8ce1c949a4983af49ccb14a1d51c4fe1
+- wai-middleware-metrics-0.2.4@sha256:d6b6916acd41aaef4ca59a839d40a3a377f9df784ae49fd4c64926ae916b6ba2

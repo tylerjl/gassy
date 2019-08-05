@@ -55,31 +55,33 @@ instance DefConfig AppConf where
 
 instance FromEnv AppConf
 
-type AppContext = (AppConf)
+type AppContext = (AppConf, BHEnv, ModLogger)
 type App = RIO AppContext
 
 main :: IO ()
 main = withEnvConfig $ \conf -> do
+  -- Setup a re-usable Elasticsearch context
+  manager <- newManager defaultManagerSettings
+  let bhEnv = mkBHEnv (Server $ elasticsearchHost conf) manager
+  -- Same for a logging context
+  (_, modLogg) <- newLogger (LogStderr defaultBufSize) simpleFormatter
   defWaiMain $
     -- Middleware for access logs. Easy!
     logStdout $
     -- Middleware to serve our static assets. Easy!
     staticPolicy (addBase $ staticPath conf) $
     -- Magicbane wraps up our Servant `App` neatly.
-    magicbaneApp api EmptyContext (conf) routes
+    magicbaneApp api EmptyContext (conf, bhEnv, modLogg) routes
 
 application :: H.Html
 application = "Gassy"
 
 -- |Index an Aeson `Value` into Elasticsearch.
-indexDoc :: (MonadIO m, Has AppConf α, MonadReader α m)
+indexDoc :: (MonadIO m, Has BHEnv α, MonadReader α m)
          => Value -> m Reply
-indexDoc doc = do
-  manager <- liftIO $ newManager defaultManagerSettings
-  esHost <- askOpt elasticsearchHost
-  runBH (es esHost manager) $ bulk $ V.fromList $
-    [ BulkIndexAuto (IndexName "gas") (MappingName "_doc") doc ]
-  where es h m = mkBHEnv (Server h) m
+indexDoc doc = asks getter >>= flip runBH bulkDocs
+  where bulkDocs = bulk $ V.fromList
+                 [ BulkIndexAuto (IndexName "gas") (MappingName "_doc") doc ]
 
 -- |Get a simple timestamp string.
 today :: IO String
@@ -90,6 +92,9 @@ addFillUp :: FillUp -> App H.Html
 addFillUp fillUp = do
   r' <- indexDoc $ toJSON fillUp
   resp <- liftIO $ (parseEsResponse r' :: IO (Either EsError Value))
+  case resp of
+    Left err -> logInfo $ displayShow err
+    Right v -> logInfo $ displayShow $ toJSON v
   homePage $ notification resp
 
 homePage :: H.Html -> App H.Html
